@@ -41,23 +41,82 @@ function preload() {
     game.load.image('bg', 'assets2/background_03.png');
     game.load.spritesheet('tile', 'assets2/tileset_02.png', 120, 120);
 
-    //STEP 1
+    game.load.image('play', 'assets2/playbtn.png');
+    
+
     game.load.spritesheet('trash', 'assets2/trash_87x67.png', 87, 67);
 
     game.load.image('paper', 'assets2/paper_bin.png');
     game.load.image('plastic', 'assets2/plastic_bin.png');
     game.load.image('leftovers', 'assets2/leftover_bin.png');
 
-    // STEP 8
+
+
     game.load.script('webfont', '//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js');
 
+    game.load.audio('bin', 'assets2/trash_sfx.mp3');
+    game.load.audio('music', 'assets2/duck.mp3');
+}
+
+function playclicked() {
+   var tween = game.add.tween(game.camera)
+                .to( { x:0, y: 0 }, 1000, Phaser.Easing.Linear.None, true);
+
+    tween.onComplete.add(function() { 
+    createTrash();      
+    game.time.events.loop(Phaser.Timer.SECOND * 15,  createTrash, this);
+   });
 
 }
 
-function create() {
-	 game.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
-  	game.scale.refresh();
+//untuk function yg dipakai hanya sekali cukup dituliskan ddlm sprti playclicked (inline)
 
+function create() {
+
+    game.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
+    game.scale.refresh();
+   
+
+    // x, y, width, height
+    game.world.setBounds(0, -600, 800, 1200);
+    game.camera.setPosition(0,-600);
+    game.stage.backgroundColor = '#B0DEFF';
+
+
+
+
+    var play = game.add.sprite(game.world.centerX, -300, 'play');
+    play.scale.setTo(0.5,0.5);
+    play.anchor.setTo(0.5,0.5);
+    play.inputEnabled = true;
+
+   
+
+    //mp3,wav,ogg
+    var music = game.add.audio('music');
+    music.loop = true;
+    music.play();
+
+
+
+
+
+    var title = game.add.text(game.world.centerX, -500, "Pilah Sampahnya!");
+    title.anchor.setTo(0.5);
+
+    title.font = 'Lobster';
+    title.fontSize = 80;
+    title.fill ="#e67e22"; 
+    title.setShadow(3, 3, 'rgba(0,0,0,0.5)', 5);
+     title.stroke = "#f1c40f";
+    title.strokeThickness = 16;
+
+    grd = title.context.createLinearGradient(0, 0, title.canvas.width, title.canvas.height);
+    grd.addColorStop(0, '#c0392b');   
+    grd.addColorStop(1, '#e67e22');    
+    title.fill = grd;
+	
+    
 	game.physics.startSystem(Phaser.Physics.ARCADE);
     game.add.sprite(0, 0, 'bg');
 
@@ -68,17 +127,20 @@ function create() {
     
     for (var i = 0; i < game.world.width/120; i++)
     {
-    	var g = grass.create(i *120, game.world.height-240, 'tile');
+    	var g = grass.create(i *120, 600-240, 'tile');
     	g.frame = 0;
-        var tile = tiles.create(i* 120, game.world.height-120 , 'tile');
+        var tile = tiles.create(i* 120, 600-120 , 'tile');
         tile.body.immovable = true;
         tile.frame = 1;
      }
 
 
-     paperbin = game.add.sprite(game.world.width * 0.3 - 169, game.world.height-180-238, 'paper');
-     plasticbin = game.add.sprite(game.world.width * 0.5 - 60, game.world.height-180-238, 'plastic');
-     leftoverbin = game.add.sprite(game.world.width * 0.8 - 60, game.world.height-180-238, 'leftovers');
+     paperbin = game.add.sprite(game.world.width * 0.2, 600-270, 'paper');
+     paperbin.anchor.setTo(0.5,0.5);
+     plasticbin = game.add.sprite(game.world.centerX , 600-270, 'plastic');
+     plasticbin.anchor.setTo(0.5,0.5);
+     leftoverbin = game.add.sprite(game.world.width * 0.8 , 600-270, 'leftovers');
+     leftoverbin.anchor.setTo(0.5,0.5);
 
      game.physics.arcade.enable(paperbin);
 	game.physics.arcade.enable(plasticbin);
@@ -89,54 +151,46 @@ function create() {
 	bins.add(plasticbin);
 	bins.add(leftoverbin);
 
-     // STEP 2
     trashes = game.add.group();
     trashes.enableBody = true;
-
-    // STEP 3
-    createTrash();
+    //createTrash(20);
     
 
-    // STEP 9
     scoreText = game.add.text(game.world.centerX, 50, "SCORE: 0");
     scoreText.anchor.setTo(0.5);
 
     scoreText.font = 'Lobster';
     scoreText.fontSize = 60;
     scoreText.fill ="#e67e22"; 
-     //  Here we set the shadow:
-    //  The first 2 parameters control x and y distance
-    //  The 3rd the shadow colour
-    //  The 4th the amount of blur   
     scoreText.setShadow(3, 3, 'rgba(0,0,0,0.5)', 5);
 
 
-    // STEP 10
-    game.time.events.loop(Phaser.Timer.SECOND * 15, createTrash, this);
+    play.events.onInputDown.add(playclicked, this);
+
+    game.time.events.loop(Phaser.Timer.SECOND * 15,  createTrash, this);
 }
 
-// STEP 10
 function createTrash() {
+    bounds = new Phaser.Rectangle(0, 0, 800, 470);
+    //alert('tes');
 	for(var i = 0; i < 20; i++) {
 
     	var t = trashes.create(100+(Math.random() * 700), -(Math.random() * 800), 'trash');
     	t.frame = game.rnd.integerInRange(0, 8);
 
-    	// STEP 4
     	t.body.gravity.y = 300;
     	t.body.bounce.y = 0.2;
     	t.body.allowRotation = true;
     	t.body.angularVelocity = Math.random() * 200;
     	t.body.angularDrag = 50;
     	t.anchor.setTo(0.5, 0.5);
-    	//t.body.collideWorldBounds = true;
-
-    	// STEP 5
     	t.inputEnabled = true;
+        t.input.boundsRect = bounds;
     	t.input.enableDrag(true);
     	t.events.onDragStart.add(onDragStart, this);   	
     	t.events.onDragStop.add(onDragStop, this);
     }
+
 }
 
 // STEP 6
@@ -149,22 +203,20 @@ function onDragStop(sprite, pointer) {
 	sprite.body.angularVelocity = Math.random() * 200;
    	sprite.body.angularDrag = 50;
    	
-   	// STEP 7
-	game.physics.arcade.overlap(sprite, bins, trashCheck, null, this);
+   	game.physics.arcade.overlap(sprite, bins, trashCheck, null, this);
 }
 
 function update() {
-	// STEP 3
 	game.physics.arcade.collide(trashes, tiles);	
 }
 
-// STEP 7
 function trashCheck (a, b) {
+    var killed = false;
 	if(a.frame < 3 && a.y <= b.y+50) {
     	// sampahnya betul
     	if(b == paperbin) {
     		score += 10;
-    		a.kill();
+            killed = true;
     	} else {
     		score -= 5;
     	}
@@ -172,7 +224,7 @@ function trashCheck (a, b) {
     	// sampahnya betul
     	if(b == plasticbin) {
     		score += 10;
-    		a.kill();
+            killed = true;
     	} else {
     		score -= 5;
     	}
@@ -180,13 +232,30 @@ function trashCheck (a, b) {
     	// sampahnya betul
     	if(b == leftoverbin) {
     		score += 10;
-    		a.kill();
+            killed = true;
     	} else {
     		score -= 5;
     	}
     }
 
-    // STEP 8
+    if(killed) {
+        var tweenEnlarge = game.add.tween(b).to( { width: 100, height: 280 }, 300, Phaser.Easing.Linear.None, true);
+        var tweenNormal  = game.add.tween(b).to({width: 169, height: 238}, 100, Phaser.Easing.Linear.None, true);
+        tweenEnlarge.chain(tweenNormal);
+
+        // STEP 5
+        var sfx = game.add.audio('bin');
+        sfx.play();
+
+
+        tweenNormal.onComplete.add(function() {   
+            var tweenAlpha = game.add.tween(a).to({alpha: 0}, 100, Phaser.Easing.Linear.None, true);
+            tweenAlpha.onComplete.add(function() {
+                a.kill();
+            });  
+             
+        });
+    }
     scoreText.text = "SCORE: " + score;
 }
 </script>
