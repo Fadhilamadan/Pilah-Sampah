@@ -1,0 +1,194 @@
+<html> 
+<head> 
+	<title>Phaser - Game 2</title>
+	<script type="text/javascript" src="phaser.min.js"></script>
+
+	<script type="text/javascript">
+  WebFontConfig = {
+    google: { families: [ 'Lobster::latin' ] }
+  };
+  (function() {
+    var wf = document.createElement('script');
+    wf.src = 'https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+    wf.type = 'text/javascript';
+    wf.async = 'true';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(wf, s);
+  })(); </script>
+
+
+</head>
+
+<body style="margin:0px;"> 
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+
+var tiles;
+var grass;
+var bins;
+var paperbin;
+var plasticbin;
+var trashes;
+var leftoverbin;
+var score =0;
+var scoreText;
+
+function preload() {
+
+    game.load.image('bg', 'assets2/background_03.png');
+    game.load.spritesheet('tile', 'assets2/tileset_02.png', 120, 120);
+
+    //STEP 1
+    game.load.spritesheet('trash', 'assets2/trash_87x67.png', 87, 67);
+
+    game.load.image('paper', 'assets2/paper_bin.png');
+    game.load.image('plastic', 'assets2/plastic_bin.png');
+    game.load.image('leftovers', 'assets2/leftover_bin.png');
+
+    // STEP 8
+    game.load.script('webfont', '//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js');
+
+
+}
+
+function create() {
+	 game.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT;
+  	game.scale.refresh();
+
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.add.sprite(0, 0, 'bg');
+
+    tiles = game.add.group();
+    grass = game.add.group();
+    tiles.enableBody = true;
+
+    
+    for (var i = 0; i < game.world.width/120; i++)
+    {
+    	var g = grass.create(i *120, game.world.height-240, 'tile');
+    	g.frame = 0;
+        var tile = tiles.create(i* 120, game.world.height-120 , 'tile');
+        tile.body.immovable = true;
+        tile.frame = 1;
+     }
+
+
+     paperbin = game.add.sprite(game.world.width * 0.3 - 169, game.world.height-180-238, 'paper');
+     plasticbin = game.add.sprite(game.world.width * 0.5 - 60, game.world.height-180-238, 'plastic');
+     leftoverbin = game.add.sprite(game.world.width * 0.8 - 60, game.world.height-180-238, 'leftovers');
+
+     game.physics.arcade.enable(paperbin);
+	game.physics.arcade.enable(plasticbin);
+	game.physics.arcade.enable(leftoverbin);
+
+	bins = game.add.group();
+	bins.add(paperbin);
+	bins.add(plasticbin);
+	bins.add(leftoverbin);
+
+     // STEP 2
+    trashes = game.add.group();
+    trashes.enableBody = true;
+
+    // STEP 3
+    createTrash();
+    
+
+    // STEP 9
+    scoreText = game.add.text(game.world.centerX, 50, "SCORE: 0");
+    scoreText.anchor.setTo(0.5);
+
+    scoreText.font = 'Lobster';
+    scoreText.fontSize = 60;
+    scoreText.fill ="#e67e22"; 
+     //  Here we set the shadow:
+    //  The first 2 parameters control x and y distance
+    //  The 3rd the shadow colour
+    //  The 4th the amount of blur   
+    scoreText.setShadow(3, 3, 'rgba(0,0,0,0.5)', 5);
+
+
+    // STEP 10
+    game.time.events.loop(Phaser.Timer.SECOND * 15, createTrash, this);
+}
+
+// STEP 10
+function createTrash() {
+	for(var i = 0; i < 20; i++) {
+
+    	var t = trashes.create(100+(Math.random() * 700), -(Math.random() * 800), 'trash');
+    	t.frame = game.rnd.integerInRange(0, 8);
+
+    	// STEP 4
+    	t.body.gravity.y = 300;
+    	t.body.bounce.y = 0.2;
+    	t.body.allowRotation = true;
+    	t.body.angularVelocity = Math.random() * 200;
+    	t.body.angularDrag = 50;
+    	t.anchor.setTo(0.5, 0.5);
+    	//t.body.collideWorldBounds = true;
+
+    	// STEP 5
+    	t.inputEnabled = true;
+    	t.input.enableDrag(true);
+    	t.events.onDragStart.add(onDragStart, this);   	
+    	t.events.onDragStop.add(onDragStop, this);
+    }
+}
+
+// STEP 6
+function onDragStart(sprite, pointer) {
+	sprite.body.moves = false;
+}
+
+function onDragStop(sprite, pointer) {
+	sprite.body.moves = true;
+	sprite.body.angularVelocity = Math.random() * 200;
+   	sprite.body.angularDrag = 50;
+   	
+   	// STEP 7
+	game.physics.arcade.overlap(sprite, bins, trashCheck, null, this);
+}
+
+function update() {
+	// STEP 3
+	game.physics.arcade.collide(trashes, tiles);	
+}
+
+// STEP 7
+function trashCheck (a, b) {
+	if(a.frame < 3 && a.y <= b.y+50) {
+    	// sampahnya betul
+    	if(b == paperbin) {
+    		score += 10;
+    		a.kill();
+    	} else {
+    		score -= 5;
+    	}
+    } else if(a.frame < 6 && a.y <= b.y+50) {
+    	// sampahnya betul
+    	if(b == plasticbin) {
+    		score += 10;
+    		a.kill();
+    	} else {
+    		score -= 5;
+    	}
+    } else if(a.frame < 9 && a.y <= b.y+50) {
+    	// sampahnya betul
+    	if(b == leftoverbin) {
+    		score += 10;
+    		a.kill();
+    	} else {
+    		score -= 5;
+    	}
+    }
+
+    // STEP 8
+    scoreText.text = "SCORE: " + score;
+}
+</script>
+</body>
+</html>
